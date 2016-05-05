@@ -18,19 +18,23 @@ streaming_client = Twitter::Streaming::Client.new do |config|
   config.access_token_secret = ENV['TWITTER_OAUTH_TOKEN_SECRET']
 end
 
-require "active_record"
+require 'active_record'
+require 'pg'
 
 # データベースへの接続
 ActiveRecord::Base.establish_connection(
-  adapter:   'sqlite3',
-  database:  'db/db.sqlite3' # ':memory:'
+    adapter: 'postgresql',
+    host: 'localhost',
+    username: 'postgres'
+  # host: <%= ENV.fetch('DATABASE_HOST', 'localhost') %>
+  # 'postgres://localhost/mydb'
 )
 
 # スキーマの設定
 class InitialSchema < ActiveRecord::Migration
   def self.up
     create_table :tweets do |t|
-      t.string :marshal
+      t.json :data
     end
   end
 
@@ -52,6 +56,9 @@ end
 # replyers' ids
 reps = []
 
+all_num = Tweet.all.count
+rep_num = Tweet.where.not("data->>'in_reply_to_status_id' = ?", "nil").count
+
 # streaming_client.sample({lang: 'ja'}) do |object|
 streaming_client.sample do |o|
 # streaming_client.user do |object|
@@ -59,12 +66,13 @@ streaming_client.sample do |o|
 
     begin
       Tweet.transaction do
-        Tweet.create(marshal: Marshal.dump(o).force_encoding("utf-8"))
+        Tweet.create(data: o.to_json)
+        all_num += 1
       end
-    rescue SQLite3::BusyException => ex
-      STDERR.puts ex
-      sleep 1
-      retry
+    # rescue SQLite3::BusyException => ex
+    #   STDERR.puts ex
+    #   sleep 1
+    #   retry
     rescue => ex
       STDERR.puts ex
       sleep 1
@@ -79,10 +87,9 @@ streaming_client.sample do |o|
       retry
     end
     
-
     # puts (b.classify object.text)
     # print %Q|\r\e[36m\e[40m■\e[0m #{o.text} (\e[35m\e[40m@#{o.user.screen_name}\e[0m)|
-    print %Q|\r\e[36m\e[40m■\e[0m \e[35m\e[40m@#{o.user.screen_name}\e[0m|
+    print %Q|\r\e[36m\e[40m■\e[0m (rep: #{rep_num}/#{all_num}) \e[35m\e[40m@#{o.user.screen_name}\e[0m|
     # puts "screen name = " + o.in_reply_to_screen_name if o.in_reply_to_screen_name?
     # puts "user id     = " + o.in_reply_to_user_id.to_s if o.in_reply_to_user_id?
     # puts "status id   = " + o.in_reply_to_status_id.to_s if o.in_reply_to_status_id?
@@ -92,14 +99,15 @@ streaming_client.sample do |o|
       # TODO: 100個たまったら取得する。
       reps.push o.in_reply_to_status_id
       if reps.length >= 100
-        puts %Q|\e[36m\e[40mSave 100 tweets\e[0m|
         ActiveRecord::Base.transaction do
         # Tweet.transaction do
           client.statuses(reps).each do |t|
-            Tweet.create(marshal: Marshal.dump(t).force_encoding("utf-8"))
+            Tweet.create(data: t.to_json)
             # puts "#{t.text} by #{t.user.screen_name}"
+            rep_num += 1
           end
         end
+        puts %Q|\e[36m\e[40mSave 100 tweets\e[0m|
         reps = []
       end
     end

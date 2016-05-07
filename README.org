@@ -1,0 +1,4 @@
+* Twitter stream saver
+
+Saves Twitter stream to PostgreSQL
+

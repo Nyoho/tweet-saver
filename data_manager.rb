@@ -11,22 +11,6 @@ ActiveRecord::Base.establish_connection(
   # 'postgres://localhost/mydb'
 )
 
-# スキーマの設定
-class InitialSchema < ActiveRecord::Migration
-  def self.up
-    create_table :tweets do |t|
-      t.json :data
-    end
-  end
-
-  def self.down
-    drop_table :tweets
-  end
-end
-
-# 1回目はマイグレーション
-# InitialSchema.migrate(:up)
-
 class Tweet < ActiveRecord::Base
 end
 
@@ -35,4 +19,5 @@ end
 Tweet.first
 Tweet.where("data->>'in_reply_to_status_id' = ?", false)
 Tweet.where.not("data->>'in_reply_to_status_id' = ?", "nil").count
+Tweet.where.not("data->>'in_reply_to_status_id' = ?", "nil").map{|t| t.data['in_reply_to_status_id']}
 binding.pry

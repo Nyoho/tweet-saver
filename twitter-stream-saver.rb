@@ -25,7 +25,8 @@ require 'pg'
 ActiveRecord::Base.establish_connection(
     adapter: 'postgresql',
     host: 'localhost',
-    username: 'postgres'
+    username: ENV['USER'],
+    database: 'postgres'
   # host: <%= ENV.fetch('DATABASE_HOST', 'localhost') %>
   # 'postgres://localhost/mydb'
 )

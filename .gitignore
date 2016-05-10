@@ -4,3 +4,4 @@ gems/*
 !gems/bundler
 .rspec
 .env
+log/

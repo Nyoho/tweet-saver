@@ -4,6 +4,7 @@ gem 'rspec'
 
 gem 'twitter'
 gem 'dotenv'
+gem 'mecab'
 
 gem 'activerecord'
 gem 'sqlite3'

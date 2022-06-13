@@ -59,7 +59,7 @@ GEM
       rspec-support (~> 3.8.0)
     rspec-support (3.8.2)
     simple_oauth (0.3.1)
-    sqlite3 (1.4.1)
+    sqlite3 (1.4.3)
     thread_safe (0.3.6)
     twitter (6.2.0)
       addressable (~> 2.3)
